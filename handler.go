@@ -5,6 +5,8 @@ import (
 	"github.com/mdlayher/netlink"
 )
 
+var sockHandle = &handler{}
+
 type handler struct {
 	genNetlinkSocket *genetlink.Conn
 	l2tpFamilyID     uint16

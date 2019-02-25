@@ -1,6 +1,8 @@
 package l2tp
 
 import (
+	"fmt"
+
 	"github.com/mdlayher/genetlink"
 	"github.com/mdlayher/netlink"
 )
@@ -10,6 +12,7 @@ var sockHandle = &handler{}
 type handler struct {
 	genNetlinkSocket *genetlink.Conn
 	l2tpFamilyID     uint16
+	version          uint8
 	_initialized     bool
 }
 
@@ -24,7 +27,12 @@ func (h *handler) initHander() (err error) {
 		return
 	}
 
+	if family.Version != 1 {
+		return fmt.Errorf("Unsupported family version: %d", family.Version)
+	}
+
 	h.l2tpFamilyID = family.ID
+	h.version = family.Version
 	h._initialized = true
 	return
 }
@@ -36,5 +44,6 @@ func (h *handler) communicateWithKernel(nlmsg *genetlink.Message, flags netlink.
 		}
 	}
 
+	nlmsg.Header.Version = h.version
 	return h.genNetlinkSocket.Execute(*nlmsg, h.l2tpFamilyID, flags)
 }

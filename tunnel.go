@@ -35,8 +35,7 @@ func GetTunnels() error {
 	}
 
 	for _, rmsg := range resp {
-		fmt.Printf("%+v\n", rmsg.Header)
-		fmt.Printf("%+v\n", parseMsgAttrs(rmsg.Data))
+		fmt.Printf("%+v\n", parsel2tpMsgAttrs(rmsg.Data))
 	}
 
 	return nil

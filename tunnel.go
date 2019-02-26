@@ -36,6 +36,7 @@ func GetTunnels() error {
 
 	for _, rmsg := range resp {
 		fmt.Printf("%+v\n", parsel2tpMsgAttrs(rmsg.Data))
+		fmt.Println(*(parsel2tpMsgAttrs(rmsg.Data)).EncapType)
 	}
 
 	return nil

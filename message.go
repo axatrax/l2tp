@@ -37,6 +37,21 @@ func alignAttr(a int) int {
 	return (a + 3) & ^3
 }
 
+func platformUint8(b []byte) *uint8 {
+	v := uint8(b[0])
+	return &v
+}
+
+func platformUint16(b []byte) *uint16 {
+	v := platformEndian.Uint16(b)
+	return &v
+}
+
+func platformUint32(b []byte) *uint32 {
+	v := platformEndian.Uint32(b)
+	return &v
+}
+
 /*
 func paddedAttr8(attrType uint16, attrValue uint8) []byte {
 

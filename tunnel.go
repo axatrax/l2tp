@@ -57,30 +57,35 @@ func parsel2tpTunnel(d []byte) (tunnel Tunnel) {
 
 	for _, attr := range attrs {
 		switch attr.attrType {
+
 		case L2TP_ATTR_ENCAP_TYPE:
-			v := platformEndian.Uint16(attr.attrValue)
-			tunnel.EncapType = &v
+			tunnel.EncapType = platformUint16(attr.attrValue)
+
 		case L2TP_ATTR_PROTO_VERSION:
-			v := uint8(attr.attrValue[0])
-			tunnel.ProtoVersion = &v
+			tunnel.ProtoVersion = platformUint8(attr.attrValue)
+
 		case L2TP_ATTR_CONN_ID:
-			v := platformEndian.Uint32(attr.attrValue)
-			tunnel.ConnId = &v
+			tunnel.ConnId = platformUint32(attr.attrValue)
+
 		case L2TP_ATTR_PEER_CONN_ID:
-			v := platformEndian.Uint32(attr.attrValue)
-			tunnel.PeerConnId = &v
+			tunnel.PeerConnId = platformUint32(attr.attrValue)
+
 		case L2TP_ATTR_IP6_SADDR:
 			v := net.IP(attr.attrValue)
 			tunnel.Ip6Saddr = &v
+
 		case L2TP_ATTR_IP6_DADDR:
 			v := net.IP(attr.attrValue)
 			tunnel.Ip6Daddr = &v
+
 		case L2TP_ATTR_IP_SADDR:
 			v := net.IP(attr.attrValue)
 			tunnel.IpSaddr = &v
+
 		case L2TP_ATTR_IP_DADDR:
 			v := net.IP(attr.attrValue)
 			tunnel.IpDaddr = &v
+
 		default:
 			if os.Getenv("DEBUG") != "" {
 				fmt.Printf("Warning: Unknown attr from kernel - %d\n", attr.attrType)

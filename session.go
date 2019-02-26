@@ -55,31 +55,32 @@ func parsel2tpSession(d []byte) (session Session) {
 		switch attr.attrType {
 
 		case L2TP_ATTR_PW_TYPE:
-			session.PwType = &(platformEndian.Uint16(attr.attrValue))
+			session.PwType = platformUint16(attr.attrValue)
 
 		case L2TP_ATTR_IFNAME:
-			session.Ifname = &(string(attr.attrValue))
+			v := string(attr.attrValue)
+			session.Ifname = &v
 
 		case L2TP_ATTR_CONN_ID:
-			session.ConnId = &(platformEndian.Uint32(attr.attrValue))
+			session.ConnId = platformUint32(attr.attrValue)
 
 		case L2TP_ATTR_PEER_CONN_ID:
-			session.PeerConnId = &(platformEndian.Uint32(attr.attrValue))
+			session.PeerConnId = platformUint32(attr.attrValue)
 
 		case L2TP_ATTR_SESSION_ID:
-			session.SessionId = &(platformEndian.Uint32(attr.attrValue))
+			session.SessionId = platformUint32(attr.attrValue)
 
 		case L2TP_ATTR_PEER_SESSION_ID:
-			session.PeerSessionId = &(platformEndian.Uint32(attr.attrValue))
+			session.PeerSessionId = platformUint32(attr.attrValue)
 
 		case L2TP_ATTR_RECV_SEQ:
-			session.RecvSeq = &(uint8(attr.attrValue[0]))
+			session.RecvSeq = platformUint8(attr.attrValue)
 
 		case L2TP_ATTR_SEND_SEQ:
-			session.SendSeq = &(uint8(attr.attrValue[0]))
+			session.SendSeq = platformUint8(attr.attrValue)
 
 		case L2TP_ATTR_LNS_MODE:
-			session.LnsMode = &(uint8(attr.attrValue[0]))
+			session.LnsMode = platformUint8(attr.attrValue)
 
 		default:
 			if os.Getenv("DEBUG") != "" {
@@ -90,6 +91,7 @@ func parsel2tpSession(d []byte) (session Session) {
 	return
 }
 
+/*
 func AddSession(session *Session, tunnel *Tunnel) error {
 
 }
@@ -101,3 +103,4 @@ func DeleteSession(session *Session, tunnel *Tunnel) error {
 func GetSessions() ([]Session, error) {
 
 }
+*/

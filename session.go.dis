@@ -1,6 +1,42 @@
 package l2tp
 
-type Session struct{}
+type Session struct {
+	PwType    *uint16
+	EncapType *uint16
+	//	Offset
+	//	DataSeq
+	//	L2SpecType
+	//	L2SpecLen
+	ProtoVersion  *uint8
+	Ifname        *string
+	ConnId        *uint32
+	PeerConnId    *uint32
+	SessionId     *uint32
+	PeerSessionId *uint32
+	//	UdpCsum
+	//	VlanId
+	//	Cookie
+	//	PeerCookie
+	//  Debug
+	RecvSeq *uint8
+	SendSeq *uint8
+	LnsMode *uint8
+	//	UsingIpsec
+	//	RecvTimeout
+	//	Fd
+	IpSaddr  *net.IP
+	IpDaddr  *net.IP
+	UdpSport *uint16
+	UdpDport *uint16
+	//	Mtu
+	//	Mru
+	//	Stats
+	Ip6Saddr *net.IP
+	Ip6Daddr *net.IP
+	//	UdpZeroCsum6Tx
+	//	UdpZeroCsum6Rx
+	//	PAD
+}
 
 func AddSession(session *Session, tunnel *Tunnel) error {
 

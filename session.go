@@ -3,6 +3,9 @@ package l2tp
 import (
 	"fmt"
 	"os"
+
+	"github.com/mdlayher/genetlink"
+	"github.com/mdlayher/netlink"
 )
 
 type Session struct {
@@ -41,6 +44,41 @@ type Session struct {
 	//	UdpZeroCsum6Tx
 	//	UdpZeroCsum6Rx
 	//	PAD
+}
+
+func (s Session) toLTV() (b []byte) {
+	if s.PwType != nil {
+		b = append(b, paddedAttr16(L2TP_ATTR_PW_TYPE, *s.PwType)...)
+	}
+
+	if s.ConnId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_CONN_ID, *s.ConnId)...)
+	}
+
+	if s.PeerConnId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_PEER_CONN_ID, *s.PeerConnId)...)
+	}
+
+	if s.SessionId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_SESSION_ID, *s.SessionId)...)
+	}
+
+	if s.PeerSessionId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_PEER_SESSION_ID, *s.PeerSessionId)...)
+	}
+
+	if s.RecvSeq != nil {
+		b = append(b, paddedAttr8(L2TP_ATTR_RECV_SEQ, *s.RecvSeq)...)
+	}
+
+	if s.SendSeq != nil {
+		b = append(b, paddedAttr8(L2TP_ATTR_SEND_SEQ, *s.SendSeq)...)
+	}
+
+	if s.LnsMode != nil {
+		b = append(b, paddedAttr8(L2TP_ATTR_LNS_MODE, *s.LnsMode)...)
+	}
+	return
 }
 
 func parsel2tpSession(d []byte) (session Session) {
@@ -91,16 +129,69 @@ func parsel2tpSession(d []byte) (session Session) {
 	return
 }
 
-/*
-func AddSession(session *Session, tunnel *Tunnel) error {
+func AddSession(session *Session) error {
+	if session.PwType == nil {
+		v := uint16(L2TP_PWTYPE_ETH)
+		session.PwType = &v
+	}
 
+	msg := &genetlink.Message{
+		Header: genetlink.Header{
+			Command: L2TP_CMD_SESSION_CREATE,
+		},
+		Data: session.toLTV(),
+	}
+
+	_, err := sockHandle.communicateWithKernel(
+		msg,
+		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func DeleteSession(session *Session, tunnel *Tunnel) error {
+func DeleteSession(session *Session) error {
+	msg := &genetlink.Message{
+		Header: genetlink.Header{
+			Command: L2TP_CMD_SESSION_DELETE,
+		},
+		Data: session.toLTV(),
+	}
 
+	_, err := sockHandle.communicateWithKernel(
+		msg,
+		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetSessions() ([]Session, error) {
+	var sessions []Session
 
+	msg := &genetlink.Message{
+		Header: genetlink.Header{
+			Command: L2TP_CMD_SESSION_GET,
+		},
+	}
+
+	resp, err := sockHandle.communicateWithKernel(
+		msg,
+		netlink.HeaderFlagsRequest|netlink.HeaderFlagsDump,
+	)
+	if err != nil {
+		return sessions, err
+	}
+
+	for _, rmsg := range resp {
+		sessions = append(sessions, parsel2tpSession(rmsg.Data))
+	}
+
+	return sessions, nil
 }
-*/

@@ -47,6 +47,50 @@ type Tunnel struct {
 	//	PAD
 }
 
+func (t Tunnel) toLTV() (b []byte) {
+	if t.EncapType != nil {
+		b = append(b, paddedAttr16(L2TP_ATTR_ENCAP_TYPE, *t.EncapType)...)
+	}
+
+	if t.ProtoVersion != nil {
+		b = append(b, paddedAttr8(L2TP_ATTR_PROTO_VERSION, *t.ProtoVersion)...)
+	}
+
+	if t.ConnId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_CONN_ID, *t.ConnId)...)
+	}
+
+	if t.PeerConnId != nil {
+		b = append(b, paddedAttr32(L2TP_ATTR_PEER_CONN_ID, *t.PeerConnId)...)
+	}
+
+	if t.IpSaddr != nil {
+		b = append(b, paddedIP(L2TP_ATTR_IP_SADDR, *t.IpSaddr)...)
+	}
+
+	if t.IpDaddr != nil {
+		b = append(b, paddedIP(L2TP_ATTR_IP_DADDR, *t.IpDaddr)...)
+	}
+
+	if t.UdpSport != nil {
+		b = append(b, paddedAttr16(L2TP_ATTR_UDP_SPORT, *t.UdpSport)...)
+	}
+
+	if t.UdpDport != nil {
+		b = append(b, paddedAttr16(L2TP_ATTR_UDP_DPORT, *t.UdpDport)...)
+	}
+
+	if t.Ip6Saddr != nil {
+		b = append(b, paddedIP(L2TP_ATTR_IP6_SADDR, *t.Ip6Saddr)...)
+	}
+
+	if t.Ip6Daddr != nil {
+		b = append(b, paddedIP(L2TP_ATTR_IP6_DADDR, *t.Ip6Daddr)...)
+	}
+
+	return
+}
+
 func parsel2tpTunnel(d []byte) (tunnel Tunnel) {
 	attrs := parseAttrs(d)
 
@@ -95,17 +139,49 @@ func parsel2tpTunnel(d []byte) (tunnel Tunnel) {
 	return
 }
 
-/*
-
 func AddTunnel(tunnel *Tunnel) error {
+	if tunnel.ProtoVersion == nil {
+		v := uint8(3)
+		tunnel.ProtoVersion = &v
+	}
 
+	msg := &genetlink.Message{
+		Header: genetlink.Header{
+			Command: L2TP_CMD_TUNNEL_CREATE,
+		},
+		Data: tunnel.toLTV(),
+	}
+
+	_, err := sockHandle.communicateWithKernel(
+		msg,
+		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func DeleteTunnel(tunnel *Tunnel) error {
+	msg := &genetlink.Message{
+		Header: genetlink.Header{
+			Command: L2TP_CMD_TUNNEL_DELETE,
+		},
+		Data: tunnel.toLTV(),
+	}
 
+	_, err := sockHandle.communicateWithKernel(
+		msg,
+		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-*/
 func GetTunnels() ([]Tunnel, error) {
 	var tunnels []Tunnel
 

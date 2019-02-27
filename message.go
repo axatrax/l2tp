@@ -1,5 +1,7 @@
 package l2tp
 
+import "net"
+
 type l2tpAttr struct {
 	attrType  uint16
 	attrValue []byte
@@ -83,6 +85,7 @@ func paddedAttr16(attrType uint16, attrValue uint16) (b []byte) {
 	b = append(b, []byte{0, 0}...)
 	return
 }
+
 func paddedAttr32(attrType uint16, attrValue uint32) (b []byte) {
 	b = append(b, platformPutUint16(8)...)         // Length
 	b = append(b, platformPutUint16(attrType)...)  // Type
@@ -90,11 +93,43 @@ func paddedAttr32(attrType uint16, attrValue uint32) (b []byte) {
 	return
 }
 
-/*
-func paddedAttrString(attrType uint16, attrValue string) []byte {
+func paddedIP(attrType uint16, ipAddr net.IP) (b []byte) {
+	if ip4 := ipAddr.To4(); ip4 != nil {
+		b = append(b, platformPutUint16(8)...)        // Length
+		b = append(b, platformPutUint16(attrType)...) // Type
+		b = append(b, ipAddr[12:]...)                 // Value
 
+	} else if len(ipAddr) == 16 {
+		b = append(b, platformPutUint16(20)...)       // Length
+		b = append(b, platformPutUint16(attrType)...) // Type
+		b = append(b, ipAddr...)                      // Value
+
+	}
+	return
 }
 
+func paddedAttrString(attrType uint16, attrValue string) []byte {
+	b := []byte{}
+
+	value := []byte(attrValue)
+	value = append(value, 0) // Null terminating
+
+	msgLen := len(value) + 4 // Plus Header
+	withPadding := alignAttr(msgLen)
+	pad := withPadding - msgLen
+
+	b = append(b, platformPutUint16(uint16(msgLen))...)
+	b = append(b, platformPutUint16(attrType)...)
+	b = append(b, value...)
+
+	if withPadding != 0 {
+		b = append(b, make([]byte, pad)...)
+	}
+
+	return b
+}
+
+/*
 func paddedAttrBytes(attrType uint16, attrValue []byte) []byte {
 
 }

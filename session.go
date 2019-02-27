@@ -78,6 +78,10 @@ func (s Session) toLTV() (b []byte) {
 	if s.LnsMode != nil {
 		b = append(b, paddedAttr8(L2TP_ATTR_LNS_MODE, *s.LnsMode)...)
 	}
+
+	if s.Ifname != nil {
+		b = append(b, paddedAttrString(L2TP_ATTR_IFNAME, *s.Ifname)...)
+	}
 	return
 }
 

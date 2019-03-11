@@ -2,17 +2,17 @@ package l2tp
 
 import "net"
 
-func typeUint8(i int) *uint8 {
+func typeUint8(i uint) *uint8 {
 	v := uint8(i)
 	return &v
 }
 
-func typeUint16(i int) *uint16 {
+func typeUint16(i uint) *uint16 {
 	v := uint16(i)
 	return &v
 }
 
-func typeUint32(i int) *uint32 {
+func typeUint32(i uint) *uint32 {
 	v := uint32(i)
 	return &v
 }

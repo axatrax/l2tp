@@ -154,7 +154,7 @@ func AddTunnel(tunnel *Tunnel) error {
 
 	_, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+		netlink.Request|netlink.Acknowledge,
 	)
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func DeleteTunnel(tunnel *Tunnel) error {
 
 	_, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+		netlink.Request|netlink.Acknowledge,
 	)
 	if err != nil {
 		return err
@@ -193,7 +193,7 @@ func GetTunnels() ([]Tunnel, error) {
 
 	resp, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsDump,
+		netlink.Request|netlink.Dump,
 	)
 	if err != nil {
 		return tunnels, err

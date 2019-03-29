@@ -148,7 +148,7 @@ func AddSession(session *Session) error {
 
 	_, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+		netlink.Request|netlink.Acknowledge,
 	)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func DeleteSession(session *Session) error {
 
 	_, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsAcknowledge,
+		netlink.Request|netlink.Acknowledge,
 	)
 	if err != nil {
 		return err
@@ -187,7 +187,7 @@ func GetSessions() ([]Session, error) {
 
 	resp, err := sockHandle.communicateWithKernel(
 		msg,
-		netlink.HeaderFlagsRequest|netlink.HeaderFlagsDump,
+		netlink.Request|netlink.Dump,
 	)
 	if err != nil {
 		return sessions, err

@@ -2,6 +2,7 @@
 
 Go implementation of l2tp user space control for Linux.  Similar to iproute2: `ip l2tp add|del tunnel|session`
 
+TODO: Convert to structure similar to [`github.com/jsimonetti/rtnetlink`](https://github.com/jsimonetti/rtnetlink), including tests
 
 ### Add Tunnel
 

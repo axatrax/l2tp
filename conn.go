@@ -2,7 +2,6 @@ package l2tp
 
 import (
 	"encoding"
-	"fmt"
 
 	"github.com/mdlayher/genetlink"
 	"github.com/mdlayher/netlink"
@@ -95,7 +94,6 @@ func (c *Conn) Execute(m Message, family uint16, flags netlink.HeaderFlags) ([]M
 	}
 
 	msgs, err := c.c.Execute(gnlm, c.genFamily.ID, flags)
-	fmt.Printf("Something - %+v\n", msgs)
 	if err != nil {
 		return nil, err
 	}

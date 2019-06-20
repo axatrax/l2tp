@@ -162,10 +162,6 @@ func (t *TunnelService) Delete(tun *TunnelMessage) error {
 	return nil
 }
 
-// func (t *TunnelService) Get(tun *TunnelMessage) ([]TunnelMessage, error) {
-
-// }
-
 func (t *TunnelService) List() ([]TunnelMessage, error) {
 	req := &TunnelMessage{
 		command: L2TP_CMD_TUNNEL_GET,
@@ -183,4 +179,64 @@ func (t *TunnelService) List() ([]TunnelMessage, error) {
 	}
 
 	return tunnels, nil
+}
+
+func (t *TunnelService) Get(tun *TunnelMessage) ([]TunnelMessage, error) {
+	tunnels, err := t.List()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]TunnelMessage, 0, len(tunnels))
+	for _, t := range tunnels {
+		if tunnelFilterMatch(tun, &t) {
+			result = append(result, t)
+		}
+	}
+
+	return result, nil
+}
+
+func tunnelFilterMatch(f, t *TunnelMessage) bool {
+	if f.EncapType != nil && *f.EncapType != *t.EncapType {
+		return false
+	}
+
+	if f.ProtoVersion != nil && *f.ProtoVersion != *t.ProtoVersion {
+		return false
+	}
+
+	if f.ConnId != nil && *f.ConnId != *t.ConnId {
+		return false
+	}
+
+	if f.PeerConnId != nil && *f.PeerConnId != *t.PeerConnId {
+		return false
+	}
+
+	if f.IpSaddr != nil && !f.IpSaddr.Equal(*t.IpSaddr) {
+		return false
+	}
+
+	if f.IpDaddr != nil && !f.IpDaddr.Equal(*t.IpDaddr) {
+		return false
+	}
+
+	if f.UdpSport != nil && *f.UdpSport != *t.UdpSport {
+		return false
+	}
+
+	if f.UdpDport != nil && *f.UdpDport != *t.UdpDport {
+		return false
+	}
+
+	if f.Ip6Saddr != nil && !f.Ip6Saddr.Equal(*t.Ip6Saddr) {
+		return false
+	}
+
+	if f.Ip6Daddr != nil && !f.Ip6Daddr.Equal(*t.Ip6Daddr) {
+		return false
+	}
+
+	return true
 }

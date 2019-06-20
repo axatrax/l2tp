@@ -157,3 +157,59 @@ func (s *SessionService) List() ([]SessionMessage, error) {
 
 	return sessions, nil
 }
+
+func (s *SessionService) Get(sess *SessionMessage) ([]SessionMessage, error) {
+	sessions, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SessionMessage, 0, len(sessions))
+	for _, s := range sessions {
+		if sessionFilterMatch(sess, &s) {
+			result = append(result, s)
+		}
+	}
+
+	return result, nil
+}
+
+func sessionFilterMatch(f, s *SessionMessage) bool {
+	if f.PwType != nil && *f.PwType != *s.PwType {
+		return false
+	}
+
+	if f.Ifname != nil && *f.Ifname != *s.Ifname {
+		return false
+	}
+
+	if f.ConnId != nil && *f.ConnId != *s.ConnId {
+		return false
+	}
+
+	if f.PeerConnId != nil && *f.PeerConnId != *s.PeerConnId {
+		return false
+	}
+
+	if f.SessionId != nil && *f.SessionId != *s.SessionId {
+		return false
+	}
+
+	if f.PeerSessionId != nil && *f.PeerSessionId != *s.PeerSessionId {
+		return false
+	}
+
+	if f.RecvSeq != nil && *f.RecvSeq != *s.RecvSeq {
+		return false
+	}
+
+	if f.SendSeq != nil && *f.SendSeq != *s.SendSeq {
+		return false
+	}
+
+	if f.LnsMode != nil && *f.LnsMode != *s.LnsMode {
+		return false
+	}
+
+	return true
+}

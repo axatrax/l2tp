@@ -2,6 +2,7 @@ package l2tp
 
 import (
 	"encoding"
+	"fmt"
 
 	"github.com/mdlayher/genetlink"
 	"github.com/mdlayher/netlink"
@@ -94,6 +95,7 @@ func (c *Conn) Execute(m Message, family uint16, flags netlink.HeaderFlags) ([]M
 	}
 
 	msgs, err := c.c.Execute(gnlm, c.genFamily.ID, flags)
+	fmt.Printf("Something - %+v\n", msgs)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +107,6 @@ type Message interface {
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
 	Command() uint8
-	//	rtMessage()
 }
 
 func packMessage(m Message, version uint8, family uint16, flags netlink.HeaderFlags) (genetlink.Message, error) {
@@ -133,6 +134,8 @@ func unpackMessages(msgs []genetlink.Message) ([]Message, error) {
 		switch nm.Header.Command {
 		case L2TP_CMD_TUNNEL_GET:
 			m = &TunnelMessage{command: nm.Header.Command}
+		case L2TP_CMD_SESSION_GET:
+			m = &SessionMessage{command: nm.Header.Command}
 		default:
 			continue
 		}

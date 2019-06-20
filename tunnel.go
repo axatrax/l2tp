@@ -51,7 +51,7 @@ func (t *TunnelMessage) MarshalBinary() ([]byte, error) {
 	if t.IpSaddr != nil {
 		ip4 := t.IpSaddr.To4()
 		if ip4 == nil {
-			return nil, fmt.Errorf("dst addr (%s) is not an ipv4 address")
+			return nil, fmt.Errorf("dst addr (%s) is not an ipv4 address", t.IpSaddr)
 		}
 		ae.Bytes(L2TP_ATTR_IP_SADDR, ip4)
 	}
@@ -59,7 +59,7 @@ func (t *TunnelMessage) MarshalBinary() ([]byte, error) {
 	if t.IpDaddr != nil {
 		ip4 := t.IpSaddr.To4()
 		if ip4 == nil {
-			return nil, fmt.Errorf("src addr (%s) is not an ipv4 address")
+			return nil, fmt.Errorf("src addr (%s) is not an ipv4 address", t.IpDaddr)
 		}
 		ae.Bytes(L2TP_ATTR_IP_DADDR, *t.IpDaddr)
 	}

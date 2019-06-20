@@ -3,159 +3,147 @@ package l2tp
 import (
 	"fmt"
 	"net"
-	"os"
 
-	"github.com/mdlayher/genetlink"
 	"github.com/mdlayher/netlink"
 )
 
-type Tunnel struct {
-	//  PwType    *uint16
-	EncapType *uint16
-	//	Offset
-	//	DataSeq
-	//	L2SpecType
-	//	L2SpecLen
+type TunnelMessage struct {
+	command uint8
+
+	EncapType    *uint16
 	ProtoVersion *uint8
-	//  Ifname       *string
-	ConnId     *uint32
-	PeerConnId *uint32
-	//  SessionId     *uint32
-	// 	PeerSessionId *uint32
-	//	UdpCsum
-	//	VlanId
-	//	Cookie
-	//	PeerCookie
-	//  Debug
-	//  RecvSeq *uint8
-	//  SendSeq *uint8
-	//  LnsMode *uint8
-	//	UsingIpsec
-	//	RecvTimeout
-	//	Fd
-	IpSaddr  *net.IP
-	IpDaddr  *net.IP
-	UdpSport *uint16
-	UdpDport *uint16
-	//	Mtu
-	//	Mru
-	//	Stats
-	Ip6Saddr *net.IP
-	Ip6Daddr *net.IP
-	//	UdpZeroCsum6Tx
-	//	UdpZeroCsum6Rx
-	//	PAD
+	ConnId       *uint32
+	PeerConnId   *uint32
+	IpSaddr      *net.IP
+	IpDaddr      *net.IP
+	UdpSport     *uint16
+	UdpDport     *uint16
+	Ip6Saddr     *net.IP
+	Ip6Daddr     *net.IP
 }
 
-func (t Tunnel) toLTV() (b []byte) {
+func (t *TunnelMessage) Command() uint8 {
+	return t.command
+}
+
+func (t *TunnelMessage) MarshalBinary() ([]byte, error) {
+	ae := netlink.NewAttributeEncoder()
+
 	if t.EncapType != nil {
-		b = append(b, paddedAttr16(L2TP_ATTR_ENCAP_TYPE, *t.EncapType)...)
+		ae.Uint16(L2TP_ATTR_ENCAP_TYPE, *t.EncapType)
 	}
 
 	if t.ProtoVersion != nil {
-		b = append(b, paddedAttr8(L2TP_ATTR_PROTO_VERSION, *t.ProtoVersion)...)
+		ae.Uint8(L2TP_ATTR_PROTO_VERSION, *t.ProtoVersion)
+	} else {
+		// Unlikely any other version is desired
+		ae.Uint8(L2TP_ATTR_PROTO_VERSION, 3)
 	}
 
 	if t.ConnId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_CONN_ID, *t.ConnId)...)
+		ae.Uint32(L2TP_ATTR_CONN_ID, *t.ConnId)
 	}
 
 	if t.PeerConnId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_PEER_CONN_ID, *t.PeerConnId)...)
+		ae.Uint32(L2TP_ATTR_PEER_CONN_ID, *t.PeerConnId)
 	}
 
 	if t.IpSaddr != nil {
-		b = append(b, paddedIP(L2TP_ATTR_IP_SADDR, *t.IpSaddr)...)
+		ip4 := t.IpSaddr.To4()
+		if ip4 == nil {
+			return nil, fmt.Errorf("dst addr (%s) is not an ipv4 address")
+		}
+		ae.Bytes(L2TP_ATTR_IP_SADDR, ip4)
 	}
 
 	if t.IpDaddr != nil {
-		b = append(b, paddedIP(L2TP_ATTR_IP_DADDR, *t.IpDaddr)...)
+		ip4 := t.IpSaddr.To4()
+		if ip4 == nil {
+			return nil, fmt.Errorf("src addr (%s) is not an ipv4 address")
+		}
+		ae.Bytes(L2TP_ATTR_IP_DADDR, *t.IpDaddr)
 	}
 
 	if t.UdpSport != nil {
-		b = append(b, paddedAttr16(L2TP_ATTR_UDP_SPORT, *t.UdpSport)...)
+		ae.Uint16(L2TP_ATTR_UDP_SPORT, *t.UdpSport)
 	}
 
 	if t.UdpDport != nil {
-		b = append(b, paddedAttr16(L2TP_ATTR_UDP_DPORT, *t.UdpDport)...)
+		ae.Uint16(L2TP_ATTR_UDP_DPORT, *t.UdpDport)
 	}
 
 	if t.Ip6Saddr != nil {
-		b = append(b, paddedIP(L2TP_ATTR_IP6_SADDR, *t.Ip6Saddr)...)
+		ae.Bytes(L2TP_ATTR_IP6_SADDR, *t.Ip6Saddr)
 	}
 
 	if t.Ip6Daddr != nil {
-		b = append(b, paddedIP(L2TP_ATTR_IP6_DADDR, *t.Ip6Daddr)...)
+		ae.Bytes(L2TP_ATTR_IP6_DADDR, *t.Ip6Daddr)
 	}
 
-	return
+	return ae.Encode()
 }
 
-func parsel2tpTunnel(d []byte) (tunnel Tunnel) {
-	attrs := parseAttrs(d)
-
-	if os.Getenv("DEBUG") != "" {
-		fmt.Println("Parsed LTVs: ")
-		fmt.Println(attrs)
+func (t *TunnelMessage) UnmarshalBinary(b []byte) error {
+	ad, err := netlink.NewAttributeDecoder(b)
+	if err != nil {
+		return err
 	}
 
-	for _, attr := range attrs {
-		switch attr.attrType {
-
+	for ad.Next() {
+		switch ad.Type() {
 		case L2TP_ATTR_ENCAP_TYPE:
-			tunnel.EncapType = platformUint16(attr.attrValue)
+			v := ad.Uint16()
+			t.EncapType = &v
 
 		case L2TP_ATTR_PROTO_VERSION:
-			tunnel.ProtoVersion = platformUint8(attr.attrValue)
+			v := ad.Uint8()
+			t.ProtoVersion = &v
 
 		case L2TP_ATTR_CONN_ID:
-			tunnel.ConnId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			t.ConnId = &v
 
 		case L2TP_ATTR_PEER_CONN_ID:
-			tunnel.PeerConnId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			t.PeerConnId = &v
 
 		case L2TP_ATTR_IP6_SADDR:
-			v := net.IP(attr.attrValue)
-			tunnel.Ip6Saddr = &v
+			v := net.IP(ad.Bytes())
+			t.Ip6Saddr = &v
 
 		case L2TP_ATTR_IP6_DADDR:
-			v := net.IP(attr.attrValue)
-			tunnel.Ip6Daddr = &v
+			v := net.IP(ad.Bytes())
+			t.Ip6Daddr = &v
 
 		case L2TP_ATTR_IP_SADDR:
-			v := net.IP(attr.attrValue)
-			tunnel.IpSaddr = &v
+			v := net.IP(ad.Bytes())
+			t.IpSaddr = &v
 
 		case L2TP_ATTR_IP_DADDR:
-			v := net.IP(attr.attrValue)
-			tunnel.IpDaddr = &v
+			v := net.IP(ad.Bytes())
+			t.IpDaddr = &v
 
-		default:
-			if os.Getenv("DEBUG") != "" {
-				fmt.Printf("Warning: Unknown attr from kernel - %d\n", attr.attrType)
-			}
+		case L2TP_ATTR_UDP_SPORT:
+			v := ad.Uint16()
+			t.UdpSport = &v
+
+		case L2TP_ATTR_UDP_DPORT:
+			v := ad.Uint16()
+			t.UdpDport = &v
 		}
 	}
-	return
+
+	return nil
 }
 
-func AddTunnel(tunnel *Tunnel) error {
-	if tunnel.ProtoVersion == nil {
-		v := uint8(3)
-		tunnel.ProtoVersion = &v
-	}
+type TunnelService struct {
+	c *Conn
+}
 
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_TUNNEL_CREATE,
-		},
-		Data: tunnel.toLTV(),
-	}
+func (t *TunnelService) Add(tun *TunnelMessage) error {
+	tun.command = L2TP_CMD_TUNNEL_CREATE
 
-	_, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Acknowledge,
-	)
+	_, err := t.c.Execute(tun, t.c.genFamily.ID, netlink.Request|netlink.Acknowledge)
 	if err != nil {
 		return err
 	}
@@ -163,18 +151,10 @@ func AddTunnel(tunnel *Tunnel) error {
 	return nil
 }
 
-func DeleteTunnel(tunnel *Tunnel) error {
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_TUNNEL_DELETE,
-		},
-		Data: tunnel.toLTV(),
-	}
+func (t *TunnelService) Delete(tun *TunnelMessage) error {
+	tun.command = L2TP_CMD_TUNNEL_DELETE
 
-	_, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Acknowledge,
-	)
+	_, err := t.c.Execute(tun, t.c.genFamily.ID, netlink.Request|netlink.Acknowledge)
 	if err != nil {
 		return err
 	}
@@ -182,25 +162,24 @@ func DeleteTunnel(tunnel *Tunnel) error {
 	return nil
 }
 
-func GetTunnels() ([]Tunnel, error) {
-	var tunnels []Tunnel
+// func (t *TunnelService) Get(tun *TunnelMessage) ([]TunnelMessage, error) {
 
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_TUNNEL_GET,
-		},
+// }
+
+func (t *TunnelService) List() ([]TunnelMessage, error) {
+	req := &TunnelMessage{
+		command: L2TP_CMD_TUNNEL_GET,
 	}
 
-	resp, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Dump,
-	)
+	resp, err := t.c.Execute(req, t.c.genFamily.ID, netlink.Request|netlink.Dump)
 	if err != nil {
-		return tunnels, err
+		return []TunnelMessage{}, err
 	}
 
-	for _, rmsg := range resp {
-		tunnels = append(tunnels, parsel2tpTunnel(rmsg.Data))
+	tunnels := make([]TunnelMessage, len(resp))
+
+	for i, t := range resp {
+		tunnels[i] = *(t).(*TunnelMessage)
 	}
 
 	return tunnels, nil

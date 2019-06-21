@@ -1,155 +1,126 @@
 package l2tp
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/mdlayher/genetlink"
 	"github.com/mdlayher/netlink"
 )
 
-type Session struct {
-	PwType *uint16
-	//  EncapType *uint16
-	//	Offset
-	//	DataSeq
-	//	L2SpecType
-	//	L2SpecLen
-	//  ProtoVersion *uint8
+type SessionMessage struct {
+	command uint8
+
+	PwType        *uint16
 	Ifname        *string
 	ConnId        *uint32
 	PeerConnId    *uint32
 	SessionId     *uint32
 	PeerSessionId *uint32
-	//	UdpCsum
-	//	VlanId
-	//	Cookie
-	//	PeerCookie
-	//  Debug
-	RecvSeq *uint8
-	SendSeq *uint8
-	LnsMode *uint8
-	//	UsingIpsec
-	//	RecvTimeout
-	//	Fd
-	//  IpSaddr  *net.IP
-	//  IpDaddr  *net.IP
-	//  UdpSport *uint16
-	//  UdpDport *uint16
-	//	Mtu
-	//	Mru
-	//	Stats
-	//  Ip6Saddr *net.IP
-	//  Ip6Daddr *net.IP
-	//	UdpZeroCsum6Tx
-	//	UdpZeroCsum6Rx
-	//	PAD
+	RecvSeq       *uint8
+	SendSeq       *uint8
+	LnsMode       *uint8
 }
 
-func (s Session) toLTV() (b []byte) {
+func (s *SessionMessage) Command() uint8 {
+	return s.command
+}
+
+func (s *SessionMessage) MarshalBinary() ([]byte, error) {
+	ae := netlink.NewAttributeEncoder()
+
 	if s.PwType != nil {
-		b = append(b, paddedAttr16(L2TP_ATTR_PW_TYPE, *s.PwType)...)
+		ae.Uint16(L2TP_ATTR_PW_TYPE, *s.PwType)
 	}
 
 	if s.ConnId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_CONN_ID, *s.ConnId)...)
+		ae.Uint32(L2TP_ATTR_CONN_ID, *s.ConnId)
 	}
 
 	if s.PeerConnId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_PEER_CONN_ID, *s.PeerConnId)...)
+		ae.Uint32(L2TP_ATTR_PEER_CONN_ID, *s.PeerConnId)
 	}
 
 	if s.SessionId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_SESSION_ID, *s.SessionId)...)
+		ae.Uint32(L2TP_ATTR_SESSION_ID, *s.SessionId)
 	}
 
 	if s.PeerSessionId != nil {
-		b = append(b, paddedAttr32(L2TP_ATTR_PEER_SESSION_ID, *s.PeerSessionId)...)
+		ae.Uint32(L2TP_ATTR_PEER_SESSION_ID, *s.PeerSessionId)
 	}
 
 	if s.RecvSeq != nil {
-		b = append(b, paddedAttr8(L2TP_ATTR_RECV_SEQ, *s.RecvSeq)...)
+		ae.Uint8(L2TP_ATTR_RECV_SEQ, *s.RecvSeq)
 	}
 
 	if s.SendSeq != nil {
-		b = append(b, paddedAttr8(L2TP_ATTR_SEND_SEQ, *s.SendSeq)...)
+		ae.Uint8(L2TP_ATTR_SEND_SEQ, *s.SendSeq)
 	}
 
 	if s.LnsMode != nil {
-		b = append(b, paddedAttr8(L2TP_ATTR_LNS_MODE, *s.LnsMode)...)
+		ae.Uint8(L2TP_ATTR_LNS_MODE, *s.LnsMode)
 	}
 
 	if s.Ifname != nil {
-		b = append(b, paddedAttrString(L2TP_ATTR_IFNAME, *s.Ifname)...)
+		ae.String(L2TP_ATTR_IFNAME, *s.Ifname)
 	}
-	return
+
+	return ae.Encode()
 }
 
-func parsel2tpSession(d []byte) (session Session) {
-	attrs := parseAttrs(d)
-
-	if os.Getenv("DEBUG") != "" {
-		fmt.Println("Parsed LTVs: ")
-		fmt.Println(attrs)
+func (s *SessionMessage) UnmarshalBinary(b []byte) error {
+	ad, err := netlink.NewAttributeDecoder(b)
+	if err != nil {
+		return err
 	}
 
-	for _, attr := range attrs {
-		switch attr.attrType {
-
+	for ad.Next() {
+		switch ad.Type() {
 		case L2TP_ATTR_PW_TYPE:
-			session.PwType = platformUint16(attr.attrValue)
+			v := ad.Uint16()
+			s.PwType = &v
 
 		case L2TP_ATTR_IFNAME:
-			v := string(attr.attrValue)
-			session.Ifname = &v
+			v := ad.String()
+			s.Ifname = &v
 
 		case L2TP_ATTR_CONN_ID:
-			session.ConnId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			s.ConnId = &v
 
 		case L2TP_ATTR_PEER_CONN_ID:
-			session.PeerConnId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			s.PeerConnId = &v
 
 		case L2TP_ATTR_SESSION_ID:
-			session.SessionId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			s.SessionId = &v
 
 		case L2TP_ATTR_PEER_SESSION_ID:
-			session.PeerSessionId = platformUint32(attr.attrValue)
+			v := ad.Uint32()
+			s.PeerSessionId = &v
 
 		case L2TP_ATTR_RECV_SEQ:
-			session.RecvSeq = platformUint8(attr.attrValue)
+			v := ad.Uint8()
+			s.RecvSeq = &v
 
 		case L2TP_ATTR_SEND_SEQ:
-			session.SendSeq = platformUint8(attr.attrValue)
+			v := ad.Uint8()
+			s.SendSeq = &v
 
 		case L2TP_ATTR_LNS_MODE:
-			session.LnsMode = platformUint8(attr.attrValue)
-
-		default:
-			if os.Getenv("DEBUG") != "" {
-				fmt.Printf("Warning: Unknown attr from kernel - %d\n", attr.attrType)
-			}
+			v := ad.Uint8()
+			s.LnsMode = &v
 		}
 	}
-	return
+
+	return nil
 }
 
-func AddSession(session *Session) error {
-	if session.PwType == nil {
-		v := uint16(L2TP_PWTYPE_ETH)
-		session.PwType = &v
-	}
+type SessionService struct {
+	c *Conn
+}
 
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_SESSION_CREATE,
-		},
-		Data: session.toLTV(),
-	}
+func (s *SessionService) Add(sess *SessionMessage) error {
+	sess.command = L2TP_CMD_SESSION_CREATE
 
-	_, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Acknowledge,
-	)
+	_, err := s.c.Execute(sess, s.c.genFamily.ID, netlink.Request|netlink.Acknowledge)
 	if err != nil {
 		return err
 	}
@@ -157,18 +128,10 @@ func AddSession(session *Session) error {
 	return nil
 }
 
-func DeleteSession(session *Session) error {
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_SESSION_DELETE,
-		},
-		Data: session.toLTV(),
-	}
+func (s *SessionService) Delete(sess *SessionMessage) error {
+	sess.command = L2TP_CMD_SESSION_DELETE
 
-	_, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Acknowledge,
-	)
+	_, err := s.c.Execute(sess, s.c.genFamily.ID, netlink.Request|netlink.Acknowledge)
 	if err != nil {
 		return err
 	}
@@ -176,26 +139,77 @@ func DeleteSession(session *Session) error {
 	return nil
 }
 
-func GetSessions() ([]Session, error) {
-	var sessions []Session
-
-	msg := &genetlink.Message{
-		Header: genetlink.Header{
-			Command: L2TP_CMD_SESSION_GET,
-		},
+func (s *SessionService) List() ([]SessionMessage, error) {
+	req := &SessionMessage{
+		command: L2TP_CMD_SESSION_GET,
 	}
 
-	resp, err := sockHandle.communicateWithKernel(
-		msg,
-		netlink.Request|netlink.Dump,
-	)
+	resp, err := s.c.Execute(req, s.c.genFamily.ID, netlink.Request|netlink.Dump)
 	if err != nil {
-		return sessions, err
+		return []SessionMessage{}, err
 	}
 
-	for _, rmsg := range resp {
-		sessions = append(sessions, parsel2tpSession(rmsg.Data))
+	sessions := make([]SessionMessage, len(resp))
+
+	for i, s := range resp {
+		sessions[i] = *(s).(*SessionMessage)
 	}
 
 	return sessions, nil
+}
+
+func (s *SessionService) Get(sess *SessionMessage) ([]SessionMessage, error) {
+	sessions, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]SessionMessage, 0, len(sessions))
+	for _, s := range sessions {
+		if sessionFilterMatch(sess, &s) {
+			result = append(result, s)
+		}
+	}
+
+	return result, nil
+}
+
+func sessionFilterMatch(f, s *SessionMessage) bool {
+	if f.PwType != nil && *f.PwType != *s.PwType {
+		return false
+	}
+
+	if f.Ifname != nil && *f.Ifname != *s.Ifname {
+		return false
+	}
+
+	if f.ConnId != nil && *f.ConnId != *s.ConnId {
+		return false
+	}
+
+	if f.PeerConnId != nil && *f.PeerConnId != *s.PeerConnId {
+		return false
+	}
+
+	if f.SessionId != nil && *f.SessionId != *s.SessionId {
+		return false
+	}
+
+	if f.PeerSessionId != nil && *f.PeerSessionId != *s.PeerSessionId {
+		return false
+	}
+
+	if f.RecvSeq != nil && *f.RecvSeq != *s.RecvSeq {
+		return false
+	}
+
+	if f.SendSeq != nil && *f.SendSeq != *s.SendSeq {
+		return false
+	}
+
+	if f.LnsMode != nil && *f.LnsMode != *s.LnsMode {
+		return false
+	}
+
+	return true
 }

@@ -11,7 +11,7 @@ TODO:
 
 ## Examples
 ### Add Tunnel
-
+```Go
     tunnel := &l2tp.Tunnel{
         EncapType:  l2tp.Encap(l2tp.L2TP_ENCAPTYPE_IP),
         ConnId:     l2tp.ID(6),
@@ -24,9 +24,9 @@ TODO:
     if err := l2nl.Tunnel.Add(tunnel); err != nil {
         // handle err
     }
-
+```
 ### Add Session
-
+```Go
     session := &l2tp.Session{
         PwType:        l2tp.PwType(l2tp.L2TP_PWTYPE_ETH),
         Ifname:        l2tp.Ifname("Iterface03"),
@@ -38,5 +38,5 @@ TODO:
     if err := l2nl.Session.Add(session); err != nil {
         // handle err
     }
-
+```
 I only implementated the pieces I needed for my project; not feature complete.  PRs welcome.
